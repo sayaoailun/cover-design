@@ -23,8 +23,16 @@ class ImageComposer:
         self.logo_image = self.base_dir / self.config["paths"]["logo_image"]
         self.watermark_image = self.base_dir / self.config["paths"]["watermark_image"]
         self.version_map = self.config["version_map"]
-        self.cover_fixed_width = self.config["cover"]["fixed_width"]
-         # ===============================
+        
+        # ===============================
+        # Layouts 配置（竖版/横版）
+        # ===============================
+        self.layouts = self.config.get("layouts", {
+            "portrait": {},
+            "landscape": {}
+        })
+        
+        # ===============================
         # Shadow 配置
         # ===============================
         # 代码默认值（健壮性保障）
@@ -48,12 +56,19 @@ class ImageComposer:
         # 合并JSON配置与默认值（灵活性保障）
         self.shadow_config = default_shadow_config.copy()
         self.shadow_config.update(self.config.get("shadow", {}))
-        self.cover_bottom_left = tuple(self.config["cover"]["bottom_left"])
-        self.title_settings = self.config["text"]["title"]
-        self.subtitle_settings = self.config["text"]["subtitle"]
+        
+        # 输出配置
         self.output_format = self.config["output"]["format"]
         self.output_quality = self.config["output"]["quality"]
         self.log_lines = []
+        
+        # 当前布局（动态设置）
+        self.current_layout = None
+        self.cover_fixed_width = 0
+        self.cover_bottom_left = (0, 0)
+        self.title_settings = {}
+        self.subtitle_settings = {}
+        self.background_image = None
 
     def _load_config(self, config_path: Path) -> dict:
         with open(config_path, "r", encoding="utf-8") as f:
@@ -87,6 +102,33 @@ class ImageComposer:
             raise FileNotFoundError(f"Excel file not found: {excel_path}")
         df = pd.read_excel(excel_path, engine="openpyxl", dtype=str)
         return df.fillna("")
+
+    def _select_layout(self, cover_image: Image.Image) -> str:
+        w, h = cover_image.size
+        aspect_ratio = w / h
+        
+        if aspect_ratio < 0.95:
+            layout_name = "portrait"
+        else:
+            layout_name = "landscape"
+        
+        layout = self.layouts.get(layout_name, {})
+        if layout:
+            cover_config = layout.get("cover", {})
+            text_config = layout.get("text", {})
+            
+            self.cover_fixed_width = cover_config.get("fixed_width", 430)
+            self.cover_bottom_left = tuple(cover_config.get("bottom_left", [100, 730]))
+            self.title_settings = text_config.get("title", {})
+            self.subtitle_settings = text_config.get("subtitle", {})
+            
+            bg_path = layout.get("background_image")
+            if bg_path:
+                self.background_image = self.base_dir / bg_path
+            else:
+                self.background_image = None
+        
+        return layout_name
 
     def _fit_cover(self, cover_image: Image.Image) -> Image.Image:
         width = self.cover_fixed_width
@@ -292,8 +334,15 @@ class ImageComposer:
     ) -> int:
         if not text:
             return 0
+        if not settings:
+            return 0
+        
+        try:
+            font_name = settings["font_name"]
+        except KeyError:
+            font_name = "msyh.ttc"
+        
         chars = list(text)
-        font_name = settings["font_name"]
         default_size = settings.get("font_size", font.size)
         min_size = settings.get("min_font_size", default_size)
         max_size = settings.get("max_font_size", default_size)
@@ -402,11 +451,81 @@ class ImageComposer:
 
         return current_font.size
 
+    def _draw_horizontal_text(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        canvas_width: int,
+        bottom_y: int,
+        font: ImageFont.FreeTypeFont,
+        settings: dict,
+    ) -> int:
+        if not text:
+            return 0
+        if not settings:
+            return 0
+        
+        try:
+            font_name = settings["font_name"]
+        except KeyError:
+            font_name = "msyh.ttc"
+        
+        default_size = settings.get("font_size", font.size)
+        min_size = settings.get("min_font_size", default_size)
+        max_size = settings.get("max_font_size", default_size)
+        size_map = settings.get("size_map")
+        
+        if size_map is not None:
+            count = len(text)
+            for entry in size_map:
+                if entry["min_chars"] <= count <= entry["max_chars"]:
+                    default_size = entry["size"]
+                    break
+        
+        size = max(min(default_size, max_size), min_size)
+        current_font = self._load_font(font_name, size)
+        bold = settings.get("font_weight", "Regular") == "Bold"
+        
+        max_width = settings.get("max_width", canvas_width - 100)
+        
+        while True:
+            text_width = draw.textlength(text, font=current_font)
+            if text_width <= max_width or size <= min_size:
+                break
+            size = max(min_size, size - 2)
+            current_font = self._load_font(font_name, size)
+        
+        text_width = draw.textlength(text, font=current_font)
+        text_height = current_font.size
+        
+        x = (canvas_width - text_width) // 2
+        y = bottom_y - text_height
+        
+        draw.text(
+            (x, y),
+            text,
+            font=current_font,
+            fill="#000000",
+            stroke_width=1 if bold else 0,
+            stroke_fill="#000000" if bold else None,
+        )
+        
+        return current_font.size
+
     def _apply_color_adjustment(self, image: Image.Image) -> Image.Image:
         return image
 
-    def _safe_open_image(self, path: Path, mode: str = "RGBA") -> Optional[Image.Image]:
-        if not path.exists():
+    def _safe_open_image(self, path, mode: str = "RGBA") -> Optional[Image.Image]:
+        if path is None:
+            return None
+        if isinstance(path, Path):
+            if not path.exists():
+                return None
+        elif isinstance(path, str):
+            path = Path(path)
+            if not path.exists():
+                return None
+        else:
             return None
         return Image.open(path).convert(mode)
 
@@ -429,6 +548,9 @@ class ImageComposer:
             cover = self._safe_open_image(cover_path)
             if cover is None:
                 return isbn, "Cover打开失败", None
+            
+            # 根据封面宽高比选择布局
+            layout_name = self._select_layout(cover)
             cover = self._fit_cover(cover)
             cover_x, cover_bottom_y = self.cover_bottom_left
             cover_y = cover_bottom_y - cover.height
@@ -480,28 +602,60 @@ class ImageComposer:
             reflection_y = cover_bottom_y
             canvas.paste(reflection, (cover_x, reflection_y), reflection)
             draw = ImageDraw.Draw(canvas)
-            title_font = self._load_font(self.title_settings["font_name"], self.title_settings["font_size"])
-            subtitle_font = self._load_font(self.title_settings["font_name"], self.subtitle_settings["font_size"])
-            if title:
-                self._draw_vertical_text(
-                    draw,
-                    title,
-                    self.title_settings["x"],
-                    self.title_settings["bottom_y"],
-                    title_font,
-                    self.title_settings["max_height"],
-                    self.title_settings,
-                )
-            if subtitle:
-                self._draw_vertical_text(
-                    draw,
-                    subtitle,
-                    self.subtitle_settings["x"],
-                    self.subtitle_settings["bottom_y"],
-                    subtitle_font,
-                    self.subtitle_settings["max_height"],
-                    self.subtitle_settings,
-                )
+            canvas_width = self.config["canvas"]["width"]
+            
+            title_font = self._load_font(
+                self.title_settings.get("font_name", "msyh.ttc"), 
+                self.title_settings.get("font_size", 38)
+            )
+            subtitle_font = self._load_font(
+                self.title_settings.get("font_name", "msyh.ttc"), 
+                self.subtitle_settings.get("font_size", 30)
+            )
+            
+            arrangement = self.title_settings.get("arrangement", "vertical")
+            
+            if title and self.title_settings:
+                if arrangement == "horizontal_center":
+                    self._draw_horizontal_text(
+                        draw,
+                        title,
+                        canvas_width,
+                        self.title_settings.get("bottom_y", 95),
+                        title_font,
+                        self.title_settings,
+                    )
+                else:
+                    self._draw_vertical_text(
+                        draw,
+                        title,
+                        self.title_settings.get("x", 615),
+                        self.title_settings.get("bottom_y", 635),
+                        title_font,
+                        self.title_settings.get("max_height", 420),
+                        self.title_settings,
+                    )
+            
+            if subtitle and self.subtitle_settings:
+                if arrangement == "horizontal_center":
+                    self._draw_horizontal_text(
+                        draw,
+                        subtitle,
+                        canvas_width,
+                        self.subtitle_settings.get("bottom_y", 156),
+                        subtitle_font,
+                        self.subtitle_settings,
+                    )
+                else:
+                    self._draw_vertical_text(
+                        draw,
+                        subtitle,
+                        self.subtitle_settings.get("x", 690),
+                        self.subtitle_settings.get("bottom_y", 635),
+                        subtitle_font,
+                        self.subtitle_settings.get("max_height", 420),
+                        self.subtitle_settings,
+                    )
             logo = self._safe_open_image(self.logo_image)
             if logo is not None:
                 canvas.paste(logo, (0, 0), logo)

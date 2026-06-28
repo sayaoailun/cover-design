@@ -22,23 +22,64 @@ class ImageComposer:
         self.materials_dir = self.base_dir / self.config["paths"].get("materials_dir", "materials")
         self.output_dir = self.base_dir / self.config["paths"]["output_dir"]
         self.output_dir.mkdir(exist_ok=True)
-        self.background_image = self.base_dir / self.config["canvas"]["background_image"]
         self.logo_image = self.base_dir / self.config["paths"]["logo_image"]
         self.watermark_image = self.base_dir / self.config["paths"]["watermark_image"]
         self.version_map = self.config["version_map"]
-        self.cover_fixed_width = self.config["cover"]["fixed_width"]
-        # ============================
-        # Shadow 配置
-        # ============================
         self.shadow_config = self.config.get("shadow", {})
-        self.cover_bottom_left = tuple(self.config["cover"]["bottom_left"])
         self.reflection_opacity_bottom = self.config["reflection"]["opacity_bottom"]
-        self.title_settings = self.config["text"]["title"]
-        self.subtitle_settings = self.config["text"]["subtitle"]
         self.color_brightness = self.config["color_adjust"]["brightness"]
         self.output_format = self.config["output"]["format"]
         self.output_quality = self.config["output"]["quality"]
         self.log_lines = []
+        
+        # ============================
+        # Layouts 配置
+        # ============================
+        self.layouts = self.config.get("layouts", {})
+        self.current_layout = None
+        
+        # 应用默认布局（优先使用portrait）
+        if "portrait" in self.layouts:
+            self.set_layout("portrait")
+        elif self.layouts:
+            first_layout = next(iter(self.layouts.keys()))
+            self.set_layout(first_layout)
+        else:
+            # 回退到旧版配置格式
+            self.background_image = self.base_dir / self.config["canvas"].get("background_image", "materials/背景图.png")
+            self.cover_fixed_width = self.config["cover"]["fixed_width"]
+            self.cover_bottom_left = tuple(self.config["cover"]["bottom_left"])
+            self.title_settings = self.config["text"]["title"]
+            self.subtitle_settings = self.config["text"]["subtitle"]
+    
+    def _apply_layout(self, layout_config: dict):
+        """应用指定布局的配置"""
+        if not layout_config:
+            return
+        
+        if "background_image" in layout_config:
+            self.background_image = self.base_dir / layout_config["background_image"]
+        
+        cover_config = layout_config.get("cover", {})
+        if "fixed_width" in cover_config:
+            self.cover_fixed_width = cover_config["fixed_width"]
+        if "bottom_left" in cover_config:
+            self.cover_bottom_left = tuple(cover_config["bottom_left"])
+        
+        text_config = layout_config.get("text", {})
+        if "title" in text_config:
+            self.title_settings = text_config["title"]
+        if "subtitle" in text_config:
+            self.subtitle_settings = text_config["subtitle"]
+    
+    def set_layout(self, layout_name: str):
+        """切换布局"""
+        layout_config = self.layouts.get(layout_name, {})
+        if layout_config:
+            self.current_layout = layout_name
+            self._apply_layout(layout_config)
+            return True
+        return False
 
     def _load_config(self, config_path: Path) -> dict:
         with open(config_path, "r", encoding="utf-8") as f:
@@ -313,6 +354,48 @@ class ImageComposer:
     def _apply_color_adjustment(self, image: Image.Image) -> Image.Image:
         return image
 
+    def _draw_horizontal_text(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        bottom_y: int,
+        font: ImageFont.FreeTypeFont,
+        max_width: int,
+        settings: dict,
+    ) -> int:
+        """绘制横版居中文字"""
+        if not text:
+            return 0
+        
+        font_name = settings["font_name"]
+        default_size = settings.get("font_size", font.size)
+        min_size = settings.get("min_font_size", default_size)
+        max_size = settings.get("max_font_size", default_size)
+        size = max(min(default_size, max_size), min_size)
+        bold = settings.get("font_weight", "Regular") == "Bold"
+        
+        current_font = self._load_font(font_name, size)
+        while True:
+            text_width = current_font.getlength(text)
+            if text_width <= max_width or size <= min_size:
+                break
+            size = max(min_size, size - 2)
+            current_font = self._load_font(font_name, size)
+        
+        text_width = current_font.getlength(text)
+        x = (self.config["canvas"]["width"] - text_width) // 2
+        
+        draw.text(
+            (x, bottom_y - current_font.size),
+            text,
+            font=current_font,
+            fill="#000000",
+            stroke_width=1 if bold else 0,
+            stroke_fill="#000000" if bold else None,
+        )
+        
+        return current_font.size
+
     def _safe_open_image(self, path: Path, mode: str = "RGBA") -> Optional[Image.Image]:
         if not path.exists():
             return None
@@ -385,26 +468,50 @@ class ImageComposer:
             draw = ImageDraw.Draw(canvas)
             title_font = self._load_font(self.title_settings["font_name"], self.title_settings["font_size"])
             subtitle_font = self._load_font(self.title_settings["font_name"], self.subtitle_settings["font_size"])
+            
             if title:
-                self._draw_vertical_text(
-                    draw,
-                    title,
-                    self.title_settings["x"],
-                    self.title_settings["bottom_y"],
-                    title_font,
-                    self.title_settings["max_height"],
-                    self.title_settings,
-                )
+                title_orientation = self.title_settings.get("orientation", "vertical")
+                if title_orientation == "horizontal":
+                    self._draw_horizontal_text(
+                        draw,
+                        title,
+                        self.title_settings["bottom_y"],
+                        title_font,
+                        self.title_settings.get("max_width", 700),
+                        self.title_settings,
+                    )
+                else:
+                    self._draw_vertical_text(
+                        draw,
+                        title,
+                        self.title_settings["x"],
+                        self.title_settings["bottom_y"],
+                        title_font,
+                        self.title_settings["max_height"],
+                        self.title_settings,
+                    )
+            
             if subtitle:
-                self._draw_vertical_text(
-                    draw,
-                    subtitle,
-                    self.subtitle_settings["x"],
-                    self.subtitle_settings["bottom_y"],
-                    subtitle_font,
-                    self.subtitle_settings["max_height"],
-                    self.subtitle_settings,
-                )
+                subtitle_orientation = self.subtitle_settings.get("orientation", "vertical")
+                if subtitle_orientation == "horizontal":
+                    self._draw_horizontal_text(
+                        draw,
+                        subtitle,
+                        self.subtitle_settings["bottom_y"],
+                        subtitle_font,
+                        self.subtitle_settings.get("max_width", 700),
+                        self.subtitle_settings,
+                    )
+                else:
+                    self._draw_vertical_text(
+                        draw,
+                        subtitle,
+                        self.subtitle_settings["x"],
+                        self.subtitle_settings["bottom_y"],
+                        subtitle_font,
+                        self.subtitle_settings["max_height"],
+                        self.subtitle_settings,
+                    )
             
             # ===========================
             # 叠加 Logo, 水印, 文版
@@ -531,6 +638,18 @@ class CoverGeneratorApp(tk.Tk):
         self.materials_entry.grid(row=3, column=0, sticky="ew", columnspan=2)
         ttk.Button(left_frame, text="浏览", command=self._browse_materials_dir).grid(row=3, column=1, padx=4)
 
+        ttk.Label(left_frame, text="布局模板:").grid(row=4, column=0, sticky="w", pady=(8, 0))
+        layout_names = list(self.composer.layouts.keys())
+        self.layout_var = tk.StringVar(value=self.composer.current_layout if self.composer.current_layout else "")
+        self.layout_combobox = ttk.Combobox(
+            left_frame,
+            textvariable=self.layout_var,
+            values=layout_names,
+            state="readonly"
+        )
+        self.layout_combobox.grid(row=4, column=1, sticky="ew", pady=(8, 0))
+        self.layout_combobox.bind("<<ComboboxSelected>>", self._on_layout_changed)
+
         ttk.Label(left_frame, text="输出目录:").grid(row=7, column=0, sticky="w")
         self.output_var = tk.StringVar(value=str(self.composer.output_dir))
         self.output_entry = ttk.Entry(left_frame, textvariable=self.output_var, width=40)
@@ -597,6 +716,14 @@ class CoverGeneratorApp(tk.Tk):
         path = filedialog.askdirectory(title="选择输出目录")
         if path:
             self.output_var.set(path)
+
+    def _on_layout_changed(self, event):
+        """切换布局时刷新配置"""
+        layout_name = self.layout_var.get()
+        if self.composer.set_layout(layout_name):
+            messagebox.showinfo("布局切换", f"已切换到 {layout_name} 布局")
+        else:
+            messagebox.showerror("错误", f"布局 {layout_name} 不存在")
 
     def start_generation(self) -> None:
         if self.worker_thread and self.worker_thread.is_alive():
