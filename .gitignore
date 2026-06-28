@@ -1,0 +1,35 @@
+# Output directories
+Output/
+output/
+*.log
+
+# # Excel files (may contain sensitive data)
+# *.xlsx
+# *.xls
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.Python
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# # Font files (large files)
+# *.ttc
+# *.ttf
+# *.otf
+
+# # Cover images (large files)
+# cover/*.jpg
+# cover/*.png
