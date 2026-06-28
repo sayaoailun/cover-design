@@ -156,37 +156,37 @@ class ImageComposer:
         
         return color_layer
 
-def _create_reflection(self, cover_image: Image.Image) -> Image.Image:
-    # 创建原图像的垂直翻转副本作为倒影基础
-    reflection = cover_image.transpose(Image.FLIP_TOP_BOTTOM)
-    
-    # 获取配置的渐变参数
-    reflection_config = self.config.get("reflection", {})
-    opacity_top = reflection_config.get("opacity_top", 0.6)
-    opacity_bottom = reflection_config.get("opacity_bottom", 0.1)
-    
-    # 创建渐变蒙版
-    width, height = reflection.size
-    mask = Image.new('L', (width, height), 0)
-    draw = ImageDraw.Draw(mask)
-    
-    # 生成垂直渐变效果（上深下浅）
-    for y in range(height):
-        # 计算当前行的不透明度，从顶部到底部线性递减
-        ratio = (height - y) / height
-        current_opacity = int((opacity_top * ratio + opacity_bottom * (1 - ratio)) * 255)
-        draw.line((0, y, width, y), fill=current_opacity)
-    
-    # 应用蒙版到倒影图像
-    reflection.putalpha(mask)
-    
-    # 可选：调整倒影的缩放比例
-    scale = reflection_config.get("scale", 0.8)
-    if scale != 1.0:
-        new_size = (int(width * scale), int(height * scale))
-        reflection = reflection.resize(new_size, Image.Resampling.LANCZOS)
-    
-    return reflection
+    def _create_reflection(self, cover_image: Image.Image) -> Image.Image:
+        # 创建原图像的垂直翻转副本作为倒影基础
+        reflection = cover_image.transpose(Image.FLIP_TOP_BOTTOM)
+        
+        # 获取配置的渐变参数
+        reflection_config = self.config.get("reflection", {})
+        opacity_top = reflection_config.get("opacity_top", 0.6)
+        opacity_bottom = reflection_config.get("opacity_bottom", 0.1)
+        
+        # 创建渐变蒙版
+        width, height = reflection.size
+        mask = Image.new('L', (width, height), 0)
+        draw = ImageDraw.Draw(mask)
+        
+        # 生成垂直渐变效果（上深下浅）
+        for y in range(height):
+            # 计算当前行的不透明度，从顶部到底部线性递减
+            ratio = (height - y) / height
+            current_opacity = int((opacity_top * ratio + opacity_bottom * (1 - ratio)) * 255)
+            draw.line((0, y, width, y), fill=current_opacity)
+        
+        # 应用蒙版到倒影图像
+        reflection.putalpha(mask)
+        
+        # 可选：调整倒影的缩放比例
+        scale = reflection_config.get("scale", 0.8)
+        if scale != 1.0:
+            new_size = (int(width * scale), int(height * scale))
+            reflection = reflection.resize(new_size, Image.Resampling.LANCZOS)
+        
+        return reflection
 
     def _draw_vertical_text(
         self,
@@ -496,7 +496,7 @@ class CoverGeneratorApp(tk.Tk):
         self.worker_thread = None
         self.stop_event = threading.Event()
         self.queue = queue.Queue()
-        self.process_queue()
+        self._process_queue()
 
     def setup_ui(self) -> None:
         main_frame = ttk.Frame(self)
@@ -571,7 +571,7 @@ class CoverGeneratorApp(tk.Tk):
 
         self.progress_var = tk.DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(self, variable=self.progress_var, maximum=100)
-        self.progress_bar.pack(fill="x", padx=12, pady=(0, 12))
+        self.progress_bar.grid(row=1, column=0, columnspan=3, sticky="ew", padx=12, pady=(0, 12))
 
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
