@@ -1,0 +1,100 @@
+{
+  "canvas": {
+    "width": 800,
+    "height": 800,
+    "background_image": "materials/背景图.png"
+  },
+  "paths": {
+    "excel_file": "ISBN.xlsx",
+    "cover_dir": "cover",
+    "output_dir": "Output",
+    "logo_image": "materials/公司logo.png",
+    "watermark_image": "materials/水印.png"
+  },
+  "version_map": {
+    "英文": "英文.png",
+    "中文": "中文.png",
+    "德文": "德文.png",
+    "韩文": "韩文.png",
+    "西班牙文": "西班牙文.png",
+    "法文": "法语版.png"
+  },
+  "output": {
+    "format": "JPEG",
+    "quality": 80
+  },
+  "cover": {
+    "fixed_width": 430,
+    "bottom_left": [100, 730]
+  },
+  "shadow": {
+    "base_height": 530,
+    "offset_x": 22,
+    "offset_y": 30,
+    "blur_radius": 18,
+    "min_blur": 12,
+    "height_ratio": 0.18,
+    "opacity": 0.35,
+    "max_alpha": 130,
+    "fade_power": 2.6,
+    "strength": 0.75,
+    "color": [40, 40, 40]
+  },
+  "reflection": {
+    "enabled": true,
+    "opacity_top": 0.4,
+    "opacity_bottom": 0.1,
+    "scale": 0.8
+  },
+
+  "text": {
+    "title": {
+      "x": 615,
+      "bottom_y": 635,
+      "font_size": 38,
+      "min_font_size": 10,
+      "max_font_size": 42,
+      "font_name": "msyh.ttc",
+      "fallback_font": "arial.ttf",
+      "font_weight": "Bold",
+      "spacing_base": 1.5,
+      "spacing_delta": 0.1,
+      "letter_spacing_em": 0.005,
+      "size_map": [
+        { "min_chars": 1,  "max_chars": 6,  "size": 42 },
+        { "min_chars": 7,  "max_chars": 11, "size": 35 },
+        { "min_chars": 12,  "max_chars": 16, "size": 31 },
+        { "min_chars": 17, "max_chars": 24, "size": 18 },
+        { "min_chars": 25, "max_chars": 999,"size": 10 }
+      ],
+      "column_gap_ratio": 2.0,
+      "max_height": 420,
+      "max_columns": 1
+    },
+    "subtitle": {
+      "x": 690,
+      "bottom_y": 635,
+      "font_size": 30,
+      "min_font_size": 10,
+      "max_font_size": 34,
+      "font_name": "msyh.ttc",
+      "fallback_font": "arial.ttf",
+      "font_weight": "Regular",
+      "spacing_base": 1.5,
+      "spacing_delta": 0.1,
+      "letter_spacing_em": 0.005,
+      "size_map": [
+        { "min_chars": 1,  "max_chars": 7, "size": 36 },
+        { "min_chars": 7, "max_chars": 12, "size": 30 },
+        { "min_chars": 13, "max_chars": 16, "size": 24 },
+        { "min_chars": 19, "max_chars": 999, "size": 15 }
+      ],
+      "column_gap_ratio": 2.0,
+      "max_height": 420,
+      "max_columns": 1
+    }
+  },
+  "color_adjust": {
+    "brightness": 1.09
+  }
+}
