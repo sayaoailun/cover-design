@@ -486,29 +486,61 @@ class ImageComposer:
         current_font = self._load_font(font_name, size)
         bold = settings.get("font_weight", "Regular") == "Bold"
         
+        # 获取字间距（em单位，相对于字体大小）
+        letter_spacing_em = settings.get("letter_spacing_em", 0)
+        letter_spacing = letter_spacing_em * size  # 转换为像素
+        
         max_width = settings.get("max_width", canvas_width - 100)
         
         while True:
             text_width = draw.textlength(text, font=current_font)
-            if text_width <= max_width or size <= min_size:
+            # 计算带字间距的总宽度
+            if letter_spacing > 0 and len(text) > 1:
+                text_width_with_spacing = text_width + letter_spacing * (len(text) - 1)
+            else:
+                text_width_with_spacing = text_width
+            
+            if text_width_with_spacing <= max_width or size <= min_size:
                 break
             size = max(min_size, size - 2)
             current_font = self._load_font(font_name, size)
+            letter_spacing = letter_spacing_em * size  # 更新字间距
         
         text_width = draw.textlength(text, font=current_font)
         text_height = current_font.size
         
-        x = (canvas_width - text_width) // 2
+        # 计算带字间距的总宽度
+        if letter_spacing > 0 and len(text) > 1:
+            total_width = text_width + letter_spacing * (len(text) - 1)
+        else:
+            total_width = text_width
+        
+        x = (canvas_width - total_width) // 2
         y = bottom_y - text_height
         
-        draw.text(
-            (x, y),
-            text,
-            font=current_font,
-            fill="#000000",
-            stroke_width=1 if bold else 0,
-            stroke_fill="#000000" if bold else None,
-        )
+        # 如果设置了字间距，逐字符绘制
+        if letter_spacing > 0 and len(text) > 1:
+            current_x = x
+            for char in text:
+                char_width = draw.textlength(char, font=current_font)
+                draw.text(
+                    (current_x, y),
+                    char,
+                    font=current_font,
+                    fill="#000000",
+                    stroke_width=1 if bold else 0,
+                    stroke_fill="#000000" if bold else None,
+                )
+                current_x += char_width + letter_spacing
+        else:
+            draw.text(
+                (x, y),
+                text,
+                font=current_font,
+                fill="#000000",
+                stroke_width=1 if bold else 0,
+                stroke_fill="#000000" if bold else None,
+            )
         
         return current_font.size
 
@@ -541,16 +573,16 @@ class ImageComposer:
             return isbn, "Cover不存在", None
         try:
             canvas = Image.new("RGBA", (self.config["canvas"]["width"], self.config["canvas"]["height"]))
+            
+            cover = self._safe_open_image(cover_path)
+            if cover is None:
+                return isbn, "Cover打开失败", None
+            # 根据封面宽高比选择布局
+            layout_name = self._select_layout(cover)
             background = self._safe_open_image(self.background_image)
             if background is not None:
                 background = background.resize(canvas.size, Image.LANCZOS)
                 canvas.paste(background, (0, 0), background)
-            cover = self._safe_open_image(cover_path)
-            if cover is None:
-                return isbn, "Cover打开失败", None
-            
-            # 根据封面宽高比选择布局
-            layout_name = self._select_layout(cover)
             cover = self._fit_cover(cover)
             cover_x, cover_bottom_y = self.cover_bottom_left
             cover_y = cover_bottom_y - cover.height

@@ -111,9 +111,9 @@
           "font_name": "msyh.ttc",
           "fallback_font": "arial.ttf",
           "font_weight": "Bold",
-          "spacing_base": 1.5,
+          "spacing_base": 2,
           "spacing_delta": 0.1,
-          "letter_spacing_em": 0.005,
+          "letter_spacing_em": 0.2,
           "size_map": [
             { "min_chars": 1,  "max_chars": 6,  "size": 42 },
             { "min_chars": 7,  "max_chars": 8, "size": 39 },
@@ -133,9 +133,9 @@
           "font_name": "msyh.ttc",
           "fallback_font": "arial.ttf",
           "font_weight": "Regular",
-          "spacing_base": 1.5,
+          "spacing_base": 2,
           "spacing_delta": 0.1,
-          "letter_spacing_em": 0.005,
+          "letter_spacing_em": 0.2,
           "size_map": [
             { "min_chars": 1,  "max_chars": 8, "size": 37 },
             { "min_chars": 9, "max_chars": 12, "size": 34 },
