@@ -64,6 +64,7 @@ class ImageComposer:
         
         # 当前布局（动态设置）
         self.current_layout = None
+        self.current_version_map = self.version_map  # 默认使用根级别配置
         self.cover_fixed_width = 0
         self.cover_bottom_left = (0, 0)
         self.title_settings = {}
@@ -127,6 +128,9 @@ class ImageComposer:
                 self.background_image = self.base_dir / bg_path
             else:
                 self.background_image = None
+            
+            # 设置当前布局对应的 version_map
+            self.current_version_map = layout.get("version_map", self.version_map)
         
         return layout_name
 
@@ -695,8 +699,8 @@ class ImageComposer:
             if watermark is not None:
                 canvas.paste(watermark, (0, 0), watermark)
             version_overlay = None
-            if version and version in self.version_map:
-                version_path = self.materials_dir / self.version_map[version]
+            if version and version in self.current_version_map:
+                version_path = self.materials_dir / self.current_version_map[version]
                 version_overlay = self._safe_open_image(version_path)
             if version_overlay is not None:
                 canvas.paste(version_overlay, (0, 0), version_overlay)

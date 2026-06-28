@@ -31,7 +31,11 @@
     "blur": 4,
     "opacity": 80,
     "fade_power": 2,
-    "color": [30, 30, 30]
+    "color": [
+      30,
+      30,
+      30
+    ]
   },
   "reflection": {
     "enabled": true,
@@ -42,9 +46,20 @@
   "layouts": {
     "portrait": {
       "background_image": "materials/背景图-portrait.png",
+      "version_map": {
+        "英文": "英文-portrait.png",
+        "中文": "中文-portrait.png",
+        "德文": "德文-portrait.png",
+        "韩文": "韩文-portrait.png",
+        "西班牙文": "西班牙文-portrait.png",
+        "法文": "法语版-portrait.png"
+      },
       "cover": {
-      "fixed_width": 430,
-      "bottom_left": [100, 730]
+        "fixed_width": 430,
+        "bottom_left": [
+          100,
+          730
+        ]
       },
       "text": {
         "title": {
@@ -60,12 +75,36 @@
           "spacing_delta": 0.1,
           "letter_spacing_em": 0.005,
           "size_map": [
-            { "min_chars": 1,  "max_chars": 6,  "size": 42 },
-            { "min_chars": 7,  "max_chars": 8, "size": 39 },
-            { "min_chars": 9,  "max_chars": 10, "size": 36 },
-            { "min_chars": 11,  "max_chars": 12, "size": 32 },
-            { "min_chars": 13, "max_chars": 15, "size": 28 },
-            { "min_chars": 16, "max_chars": 999,"size": 10 }
+            {
+              "min_chars": 1,
+              "max_chars": 6,
+              "size": 42
+            },
+            {
+              "min_chars": 7,
+              "max_chars": 8,
+              "size": 39
+            },
+            {
+              "min_chars": 9,
+              "max_chars": 10,
+              "size": 36
+            },
+            {
+              "min_chars": 11,
+              "max_chars": 12,
+              "size": 32
+            },
+            {
+              "min_chars": 13,
+              "max_chars": 15,
+              "size": 28
+            },
+            {
+              "min_chars": 16,
+              "max_chars": 999,
+              "size": 10
+            }
           ],
           "column_gap_ratio": 2.0,
           "max_height": 420,
@@ -84,10 +123,26 @@
           "spacing_delta": 0.1,
           "letter_spacing_em": 0.005,
           "size_map": [
-            { "min_chars": 1,  "max_chars": 8, "size": 37 },
-            { "min_chars": 9, "max_chars": 12, "size": 34 },
-            { "min_chars": 13, "max_chars": 15, "size": 30 },
-            { "min_chars": 16, "max_chars": 999, "size": 15 }
+            {
+              "min_chars": 1,
+              "max_chars": 8,
+              "size": 37
+            },
+            {
+              "min_chars": 9,
+              "max_chars": 12,
+              "size": 34
+            },
+            {
+              "min_chars": 13,
+              "max_chars": 15,
+              "size": 30
+            },
+            {
+              "min_chars": 16,
+              "max_chars": 999,
+              "size": 15
+            }
           ],
           "column_gap_ratio": 2.0,
           "max_height": 420,
@@ -95,11 +150,22 @@
         }
       }
     },
-    "landscape": {  
+    "landscape": {
       "background_image": "materials/背景图-landscape.png",
+      "version_map": {
+        "英文": "英文-landscape.png",
+        "中文": "中文-landscape.png",
+        "德文": "德文-landscape.png",
+        "韩文": "韩文-landscape.png",
+        "西班牙文": "西班牙文-landscape.png",
+        "法文": "法语版-landscape.png"
+      },
       "cover": {
-      "fixed_width": 538,
-      "bottom_left": [130, 757]
+        "fixed_width": 538,
+        "bottom_left": [
+          130,
+          757
+        ]
       },
       "text": {
         "title": {
@@ -115,12 +181,36 @@
           "spacing_delta": 0.1,
           "letter_spacing_em": 0.2,
           "size_map": [
-            { "min_chars": 1,  "max_chars": 6,  "size": 42 },
-            { "min_chars": 7,  "max_chars": 8, "size": 39 },
-            { "min_chars": 9,  "max_chars": 10, "size": 36 },
-            { "min_chars": 11,  "max_chars": 12, "size": 32 },
-            { "min_chars": 13, "max_chars": 15, "size": 28 },
-            { "min_chars": 16, "max_chars": 999,"size": 10 }
+            {
+              "min_chars": 1,
+              "max_chars": 6,
+              "size": 42
+            },
+            {
+              "min_chars": 7,
+              "max_chars": 8,
+              "size": 39
+            },
+            {
+              "min_chars": 9,
+              "max_chars": 10,
+              "size": 36
+            },
+            {
+              "min_chars": 11,
+              "max_chars": 12,
+              "size": 32
+            },
+            {
+              "min_chars": 13,
+              "max_chars": 15,
+              "size": 28
+            },
+            {
+              "min_chars": 16,
+              "max_chars": 999,
+              "size": 10
+            }
           ],
           "column_gap_ratio": 2.0,
           "max_columns": 1
@@ -137,10 +227,26 @@
           "spacing_delta": 0.1,
           "letter_spacing_em": 0.2,
           "size_map": [
-            { "min_chars": 1,  "max_chars": 8, "size": 37 },
-            { "min_chars": 9, "max_chars": 12, "size": 34 },
-            { "min_chars": 13, "max_chars": 15, "size": 30 },
-            { "min_chars": 16, "max_chars": 999, "size": 15 }
+            {
+              "min_chars": 1,
+              "max_chars": 8,
+              "size": 37
+            },
+            {
+              "min_chars": 9,
+              "max_chars": 12,
+              "size": 34
+            },
+            {
+              "min_chars": 13,
+              "max_chars": 15,
+              "size": 30
+            },
+            {
+              "min_chars": 16,
+              "max_chars": 999,
+              "size": 15
+            }
           ],
           "column_gap_ratio": 2.0,
           "max_columns": 1
