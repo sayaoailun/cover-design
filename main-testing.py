@@ -551,6 +551,42 @@ class ImageComposer:
     def _apply_color_adjustment(self, image: Image.Image) -> Image.Image:
         return image
 
+    def _generate_white_bg(self, cover_image: Image.Image, isbn: str) -> None:
+        """
+        生成800x800的白底图，将cover居中放置，根据宽高比决定左右或上下补白
+        """
+        target_size = 800
+        
+        # 获取cover尺寸
+        cover_w, cover_h = cover_image.size
+        
+        # 计算缩放比例，使cover能完整放入800x800
+        scale = min(target_size / cover_w, target_size / cover_h)
+        new_w = int(cover_w * scale)
+        new_h = int(cover_h * scale)
+        
+        # 缩放cover
+        cover_resized = cover_image.resize((new_w, new_h), Image.LANCZOS)
+        
+        # 创建白底画布
+        white_bg = Image.new("RGB", (target_size, target_size), (255, 255, 255))
+        
+        # 计算居中位置
+        x = (target_size - new_w) // 2
+        y = (target_size - new_h) // 2
+        
+        # 将cover粘贴到白底画布上
+        if cover_resized.mode == "RGBA":
+            white_bg.paste(cover_resized, (x, y), cover_resized)
+        else:
+            white_bg.paste(cover_resized, (x, y))
+        
+        # 输出文件名：原图片_w.jpg
+        output_filename = f"{isbn}_w.jpg"
+        output_path = self.output_dir / output_filename
+        
+        white_bg.save(output_path, format="JPEG", quality=self.output_quality, optimize=True)
+
     def _safe_open_image(self, path, mode: str = "RGBA") -> Optional[Image.Image]:
         if path is None:
             return None
@@ -726,6 +762,11 @@ class ImageComposer:
                 quality=output_quality,
                 optimize=True
             )
+            
+            # 生成白底图（如果需要）
+            if hasattr(self, 'output_white_bg') and self.output_white_bg:
+                self._generate_white_bg(cover, isbn)
+            
             return isbn, "Success", result
         except Exception as exc:
             return isbn, f"Error: {exc}", None
@@ -736,7 +777,9 @@ class ImageComposer:
         output_quality: int,
         on_update: Optional[Callable[[int, int, int, str, str, Optional[Image.Image]], None]] = None,
         stop_event: Optional[threading.Event] = None,
+        output_white_bg: bool = False,
     ) -> tuple[int, int]:
+        self.output_white_bg = output_white_bg
         df = self._read_excel(excel_path)
         total = len(df)
         success_count = 0
@@ -812,9 +855,14 @@ class CoverGeneratorApp(tk.Tk):
         self.start_button.grid(row=1, column=0, sticky="ew")
         self.stop_button = ttk.Button(center_frame, text="停止", command=self.stop_generation, state="disabled")
         self.stop_button.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        
+        # 白底图选项
+        self.white_bg_var = tk.BooleanVar(value=False)
+        self.white_bg_check = ttk.Checkbutton(center_frame, text="输出白底图 (800x800)", variable=self.white_bg_var)
+        self.white_bg_check.grid(row=3, column=0, sticky="w", pady=(8, 0))
 
         quality_frame = ttk.Frame(center_frame)
-        quality_frame.grid(row=3, column=0, pady=(12, 0), sticky="ew")
+        quality_frame.grid(row=4, column=0, pady=(12, 0), sticky="ew")
         ttk.Label(quality_frame, text="JPG 质量: ").grid(row=0, column=0, sticky="w")
         self.quality_var = tk.IntVar(value=self.composer.output_quality)
         self.quality_slider = ttk.Scale(quality_frame, from_=10, to=100, variable=self.quality_var, orient="horizontal")
@@ -822,10 +870,10 @@ class CoverGeneratorApp(tk.Tk):
         quality_frame.columnconfigure(1, weight=1)
 
         preview_label = ttk.Label(center_frame, text="当前预览:")
-        preview_label.grid(row=4, column=0, sticky="w", pady=(12, 0))
+        preview_label.grid(row=5, column=0, sticky="w", pady=(12, 0))
         self.preview_canvas = ttk.Label(center_frame, relief="sunken", width=32)
-        self.preview_canvas.grid(row=5, column=0, sticky="nsew", pady=(4, 0))
-        center_frame.rowconfigure(5, weight=1)
+        self.preview_canvas.grid(row=6, column=0, sticky="nsew", pady=(4, 0))
+        center_frame.rowconfigure(6, weight=1)
 
         ttk.Label(right_frame, text="日志", font=(None, 12, "bold")).grid(row=0, column=0, sticky="w")
         self.log_text = tk.Text(right_frame, width=40, height=20, state="disabled")
@@ -887,10 +935,11 @@ class CoverGeneratorApp(tk.Tk):
         self.composer.output_dir = Path(self.output_var.get())
         self.composer.output_dir.mkdir(parents=True, exist_ok=True)
         quality = int(self.quality_var.get())
+        output_white_bg = self.white_bg_var.get()
 
         self.worker_thread = threading.Thread(
             target=self._run_generation,
-            args=(excel_path, quality),
+            args=(excel_path, quality, output_white_bg),
             daemon=True,
         )
         self.worker_thread.start()
@@ -900,13 +949,14 @@ class CoverGeneratorApp(tk.Tk):
         self.status_var.set("停止中...")
         self.stop_button.config(state="disabled")
 
-    def _run_generation(self, excel_path: Path, quality: int) -> None:
+    def _run_generation(self, excel_path: Path, quality: int, output_white_bg: bool = False) -> None:
         try:
             success, failure = self.composer.generate_all(
                 excel_path=excel_path,
                 output_quality=quality,
                 on_update=self._queue_update,
                 stop_event=self.stop_event,
+                output_white_bg=output_white_bg,
             )
             if self.stop_event.is_set():
                 self.queue.put(("finished", success, failure, True))
