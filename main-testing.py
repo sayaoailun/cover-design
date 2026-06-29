@@ -1039,7 +1039,13 @@ class CoverGeneratorApp(tk.Tk):
 
 
 def main() -> None:
-    base_dir = Path(__file__).resolve().parent
+    # 获取程序运行时的目录
+    if getattr(sys, 'frozen', False):
+        # 如果是打包后的exe，获取exe所在目录
+        base_dir = Path(sys.executable).resolve().parent
+    else:
+        # 如果是直接运行的脚本
+        base_dir = Path(__file__).resolve().parent
     app = CoverGeneratorApp(base_dir)
     app.protocol("WM_DELETE_WINDOW", app.on_close)
     app.mainloop()

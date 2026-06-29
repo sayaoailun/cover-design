@@ -110,6 +110,64 @@ python main.py
 3. 输出目录不存在时会自动创建
 4. 生成过程中可随时停止
 
+## 打包指南
+
+### 打包成可执行文件
+
+项目提供了两个打包脚本，可将程序打包成独立的 Windows 可执行文件（.exe）：
+
+#### 方法一：使用批处理脚本（推荐）
+
+```bash
+# 双击运行或命令行执行
+build_exe.bat
+```
+
+#### 方法二：使用 PowerShell 脚本
+
+```powershell
+./build_exe.ps1
+```
+
+#### 手动打包命令
+
+```bash
+pyinstaller --onefile --windowed --name "CoverGenerator" --icon=none --add-data "config-testing.json;." --add-data "cover;cover" --add-data "materials;materials" main-testing.py
+```
+
+### 打包后文件结构
+
+打包成功后，在 `dist/` 目录下会生成 `CoverGenerator.exe` 文件。
+
+**运行前请确保以下文件/目录与 exe 放在同一目录：**
+
+```
+CoverGenerator.exe
+├── config-testing.json    # 配置文件
+├── cover/                 # 封面图片目录
+├── materials/             # 素材目录
+├── ISBN.xlsx              # Excel 数据源（可选，可通过界面选择）
+└── Output/                # 输出目录（程序运行时自动创建）
+```
+
+### 打包注意事项
+
+1. **配置文件**：`config-testing.json` 必须与 exe 放在同一目录
+2. **资源目录**：`cover/` 和 `materials/` 目录必须与 exe 放在同一目录
+3. **字体文件**：字体文件需放置在项目目录或系统字体目录（C:\Windows\Fonts）
+4. **输出目录**：程序运行时会自动创建 `Output/` 目录
+5. **打包工具**：确保已安装 PyInstaller（打包脚本会自动安装）
+
+### 常见问题
+
+**Q: 运行 exe 时报错 "No such file or directory: config-testing.json"**
+
+**A:** 请确保 `config-testing.json` 文件与 `CoverGenerator.exe` 放在同一目录。
+
+**Q: 界面显示正常，但封面图片无法加载**
+
+**A:** 请确保 `cover/` 目录与 exe 放在同一目录，且图片文件名与 Excel 中的 ISBN 号一致。
+
 ## 许可证
 
 MIT License

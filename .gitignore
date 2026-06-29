@@ -2,6 +2,8 @@
 Output/
 output/
 *.log
+build/
+dist/
 
 # # Excel files (may contain sensitive data)
 # *.xlsx
