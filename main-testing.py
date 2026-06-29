@@ -108,7 +108,7 @@ class ImageComposer:
         w, h = cover_image.size
         aspect_ratio = w / h
         
-        if aspect_ratio < 0.95:
+        if aspect_ratio < 0.94:
             layout_name = "portrait"
         else:
             layout_name = "landscape"
